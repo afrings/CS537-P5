@@ -392,3 +392,8 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
 //PAGEBREAK!
 // Blank page.
 
+// P5
+
+int mencrypt(char* virtual_addr, int len){
+  return -1;
+}

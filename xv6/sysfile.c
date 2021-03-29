@@ -16,6 +16,9 @@
 #include "file.h"
 #include "fcntl.h"
 
+// P5
+
+
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
 static int
@@ -447,13 +450,18 @@ int
 sys_mencrypt(void){
   char* virtual_addr;
   int len;
-  if(argint(0, &len) < 0){
+  if(argint(0, &len) < 0 || argstr(1, &virtual_addr) < 0){
     return -1;
+  }
+  cprintf("va: %s\n", virtual_addr);
+  cprintf("len: %d\n", len);
+  if(len < 0){
+    return - 1;
   }
 
   if(len == 0){
     return 0;
   }
-
-  return 0;
+  // return 0;
+  return mencrypt(virtual_addr, len);
 }
