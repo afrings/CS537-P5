@@ -1,20 +1,17 @@
+#include "param.h"
 #include "types.h"
 #include "stat.h"
 #include "user.h"
+#define PGSIZE 4096
 
-int
-main(int argc, char **argv)
-{
-//   int i;
 
-//   if(argc < 2){
-//     printf(2, "usage: kill pid...\n");
-//     exit();
-//   }
-//   for(i=1; i<argc; i++)
-    //char* virtual_addr = "5000";
-    char* virtual_addr = "0x5500";
-    printf(1, "%d\n", mencrypt(virtual_addr, 12));
-
+int main(void) {
+    const uint PAGES_NUM = 3;
+    
+    // Allocate one pages of space
+    char* ptr = sbrk(PAGES_NUM * PGSIZE);
+    ptr += 50;
+    printf(1, "XV6_TEST_OUTPUT %d\n", mencrypt(ptr, PAGES_NUM));
+    
     exit();
 }

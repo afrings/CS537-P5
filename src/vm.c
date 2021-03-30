@@ -10,9 +10,6 @@
 extern char data[];  // defined by kernel.ld
 pde_t *kpgdir;  // for use in scheduler()
 
-// P5
-int atoi(const char* s);
-
 // Set up CPU's kernel segment descriptors.
 // Run once on entry on each CPU.
 void
@@ -33,7 +30,7 @@ seginit(void)
 }
 
 // Return the address of the PTE in page table pgdir
-// that corresponds to virtual address va.  If alloc!=0,
+// that corresponds to virtual address va.  If alloc !=0,
 // create any required page table pages.
 static pte_t *
 walkpgdir(pde_t *pgdir, const void *va, int alloc)
@@ -355,7 +352,7 @@ uva2ka(pde_t *pgdir, char *uva)
   pte_t *pte;
 
   pte = walkpgdir(pgdir, uva, 0);
-  if((*pte & PTE_P) == 0)
+  if((*pte & PTE_P) == 0 && (*pte & PTE_E) == 0)
     return 0;
   if((*pte & PTE_U) == 0)
     return 0;
@@ -401,25 +398,35 @@ int mencrypt(char* virtual_addr, int len){
   if (len < 0){
     return -1;
   }
-  virtual_addr += 2;
-  char* vauint = (char*)PGROUNDDOWN((uint)atoi(virtual_addr));
-  cprintf("&va: %d\n", atoi(virtual_addr));
-  cprintf("&va: %s\n", virtual_addr);
-  cprintf("\t%d\n", vauint);
 
-  // char* output = uva2ka(myproc()->pgdir, vauint);
-  // cprintf("out: %x\n", output);
+  char* va_pg_aligned = (char*)PGROUNDDOWN((uint)virtual_addr);
+  char* ka;
+  char* pa;
+  pte_t *pte;
 
+  // check that virtual_addr and len are valid
+  for (int l = 1; l < len + 1; ++l){
+    ka = uva2ka(myproc()->pgdir, (va_pg_aligned + ((l-1) * PGSIZE)));
+    if (ka == 0){
+      return -1;
+    }
+  }
+
+  for (int l = 1; l < len + 1; ++l){
+    // encrypt the physical page
+    ka = uva2ka(myproc()->pgdir, (va_pg_aligned + ((l-1) * PGSIZE)));
+    if (ka == 0){
+      cprintf("PROBLEM HERE\n");
+    }
+    pa = ka - KERNBASE;
+    pa = (char*)(((uint)pa) ^ 0xFFFFFFFF);
+
+    // set the PTE_E to 1
+    pte = walkpgdir(myproc()->pgdir, (void*)(va_pg_aligned + ((l-1) * PGSIZE)), 0);
+    cprintf("pt: %x\n", *pte);
+    *pte = (*pte | PTE_E);
+    cprintf("pt: %x\n", *pte);
+    cprintf("\n");
+  }
   return 0;
-}
-
-int
-atoi(const char *s)
-{
-  int n;
-
-  n = 0;
-  while('0' <= *s && *s <= '9')
-    n = n*10 + *s++ - '0';
-  return n;
 }

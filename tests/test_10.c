@@ -2,6 +2,8 @@
 #include "types.h"
 #include "stat.h"
 #include "user.h"
+#include "ptentry.h"
+
 #define PGSIZE 4096
 
 

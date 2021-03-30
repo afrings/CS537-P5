@@ -30,7 +30,7 @@ seginit(void)
 }
 
 // Return the address of the PTE in page table pgdir
-// that corresponds to virtual address va.  If alloc!=0,
+// that corresponds to virtual address va.  If alloc !=0,
 // create any required page table pages.
 static pte_t *
 walkpgdir(pde_t *pgdir, const void *va, int alloc)
@@ -352,7 +352,7 @@ uva2ka(pde_t *pgdir, char *uva)
   pte_t *pte;
 
   pte = walkpgdir(pgdir, uva, 0);
-  if((*pte & PTE_P) == 0)
+  if((*pte & PTE_P) == 0 && (*pte & PTE_E) == 0)
     return 0;
   if((*pte & PTE_U) == 0)
     return 0;
@@ -399,30 +399,34 @@ int mencrypt(char* virtual_addr, int len){
     return -1;
   }
 
-  char* vauint = (char*)PGROUNDDOWN((uint)virtual_addr);
+  char* va_pg_aligned = (char*)PGROUNDDOWN((uint)virtual_addr);
+  char* ka;
+  char* pa;
+  pte_t *pte;
 
   // check that virtual_addr and len are valid
-  char* output;
   for (int l = 1; l < len + 1; ++l){
-    output = uva2ka(myproc()->pgdir, (vauint + ((l-1) * PGSIZE)));
-    if (output == 0){
+    ka = uva2ka(myproc()->pgdir, (va_pg_aligned + ((l-1) * PGSIZE)));
+    if (ka == 0){
       return -1;
     }
-    cprintf("%d\n",l);
   }
 
-  char* pa;
   for (int l = 1; l < len + 1; ++l){
-    output = uva2ka(myproc()->pgdir, (vauint + ((l-1) * PGSIZE)));
-    if (output == 0){
+    // encrypt the physical page
+    ka = uva2ka(myproc()->pgdir, (va_pg_aligned + ((l-1) * PGSIZE)));
+    if (ka == 0){
       cprintf("PROBLEM HERE\n");
     }
+    pa = ka - KERNBASE;
+    pa = (char*)(((uint)pa) ^ 0xFFFFFFFF);
 
-    pa = output - KERNBASE;
-    cprintf("%x\n", output);
-    cprintf("%x\n", pa);
-    cprintf("%x\n", KERNBASE);
+    // set the PTE_E to 1
+    pte = walkpgdir(myproc()->pgdir, (void*)(va_pg_aligned + ((l-1) * PGSIZE)), 0);
+    cprintf("pt: %x\n", *pte);
+    *pte = (*pte | PTE_E);
+    cprintf("pt: %x\n", *pte);
+    cprintf("\n");
   }
-
   return 0;
 }

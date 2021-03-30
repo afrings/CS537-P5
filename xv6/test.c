@@ -6,7 +6,7 @@
 
 
 int main(void) {
-    const uint PAGES_NUM = 1;
+    const uint PAGES_NUM = 3;
     
     // Allocate one pages of space
     char* ptr = sbrk(PAGES_NUM * PGSIZE);

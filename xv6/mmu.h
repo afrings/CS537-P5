@@ -97,7 +97,7 @@ struct segdesc {
 #define PTE_PS          0x080   // Page Size
 
 // P5
-#define PTE_T           0x009
+#define PTE_E           0x200   // Encrypted
 
 // Address in page table or page directory entry
 #define PTE_ADDR(pte)   ((uint)(pte) & ~0xFFF)
