@@ -395,5 +395,34 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
 // P5
 
 int mencrypt(char* virtual_addr, int len){
-  return -1;
+  if (len < 0){
+    return -1;
+  }
+
+  char* vauint = (char*)PGROUNDDOWN((uint)virtual_addr);
+
+  // check that virtual_addr and len are valid
+  char* output;
+  for (int l = 1; l < len + 1; ++l){
+    output = uva2ka(myproc()->pgdir, (vauint + ((l-1) * PGSIZE)));
+    if (output == 0){
+      return -1;
+    }
+    cprintf("%d\n",l);
+  }
+
+  char* pa;
+  for (int l = 1; l < len + 1; ++l){
+    output = uva2ka(myproc()->pgdir, (vauint + ((l-1) * PGSIZE)));
+    if (output == 0){
+      cprintf("PROBLEM HERE\n");
+    }
+
+    pa = output - KERNBASE;
+    cprintf("%x\n", output);
+    cprintf("%x\n", pa);
+    cprintf("%x\n", KERNBASE);
+  }
+
+  return 0;
 }

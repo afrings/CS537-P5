@@ -450,11 +450,13 @@ int
 sys_mencrypt(void){
   char* virtual_addr;
   int len;
-  if(argint(0, &len) < 0 || argstr(1, &virtual_addr) < 0){
+  if(argptr(0, &virtual_addr, sizeof(virtual_addr)) < 0){
     return -1;
   }
-  cprintf("va: %s\n", virtual_addr);
-  cprintf("len: %d\n", len);
+  if(argint(1, &len) < 0) {
+    return -1;
+  }
+
   if(len < 0){
     return - 1;
   }
@@ -462,6 +464,6 @@ sys_mencrypt(void){
   if(len == 0){
     return 0;
   }
-  // return 0;
+
   return mencrypt(virtual_addr, len);
 }
