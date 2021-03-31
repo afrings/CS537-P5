@@ -103,7 +103,6 @@ extern int sys_unlink(void);
 extern int sys_wait(void);
 extern int sys_write(void);
 extern int sys_uptime(void);
-
 // P5
 extern int sys_mencrypt(void);
 

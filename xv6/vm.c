@@ -413,20 +413,21 @@ int mencrypt(char* virtual_addr, int len){
   }
 
   for (int l = 1; l < len + 1; ++l){
-    // encrypt the physical page
-    ka = uva2ka(myproc()->pgdir, (va_pg_aligned + ((l-1) * PGSIZE)));
-    if (ka == 0){
-      cprintf("PROBLEM HERE\n");
-    }
-    pa = ka - KERNBASE;
-    pa = (char*)(((uint)pa) ^ 0xFFFFFFFF);
-
-    // set the PTE_E to 1
     pte = walkpgdir(myproc()->pgdir, (void*)(va_pg_aligned + ((l-1) * PGSIZE)), 0);
-    cprintf("pt: %x\n", *pte);
-    *pte = (*pte | PTE_E);
-    cprintf("pt: %x\n", *pte);
-    cprintf("\n");
+    if((*pte & PTE_E) == 0){
+      // set the PTE_E to 1 and set PTE_P to 0
+      *pte = (*pte | PTE_E);
+      *pte = (*pte & 0xfffffffe);
+
+      // encrypt the physical page
+      ka = uva2ka(myproc()->pgdir, (va_pg_aligned + ((l-1) * PGSIZE)));
+      if (ka == 0){
+        cprintf("PROBLEM HERE\n");
+      }
+      pa = ka - KERNBASE;
+      pa = (char*)(((uint)pa) ^ 0xFFFFFFFF);
+    }
+    switchuvm(myproc());
   }
   return 0;
 }
