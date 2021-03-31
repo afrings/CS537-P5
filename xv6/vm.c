@@ -408,6 +408,7 @@ int mencrypt(char* virtual_addr, int len){
   for (int l = 1; l < len + 1; ++l){
     ka = uva2ka(myproc()->pgdir, (va_pg_aligned + ((l-1) * PGSIZE)));
     if (ka == 0){
+      cprintf("Problem with invalid va\n");
       return -1;
     }
   }
@@ -419,15 +420,24 @@ int mencrypt(char* virtual_addr, int len){
       *pte = (*pte | PTE_E);
       *pte = (*pte & 0xfffffffe);
 
+      pa = (char*)(*pte & 0xfffff000);
+      ka = P2V(pa);
+
       // encrypt the physical page
-      ka = uva2ka(myproc()->pgdir, (va_pg_aligned + ((l-1) * PGSIZE)));
-      if (ka == 0){
-        cprintf("PROBLEM HERE\n");
+      for (int i = 0; i < 4096; i++){
+        *(ka + i) = (*(ka + i) ^ 0xFFFFFFFF);
+        // cprintf("%x ", *(ka + i));
+        // cprintf("%d\n", i);
       }
-      pa = ka - KERNBASE;
-      pa = (char*)(((uint)pa) ^ 0xFFFFFFFF);
+      // cprintf("\n");
     }
     switchuvm(myproc());
   }
+
+  return 0;
+}
+
+int getpgtable(struct pt_entry* entries, int num){
+
   return 0;
 }

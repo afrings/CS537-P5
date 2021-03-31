@@ -1,5 +1,6 @@
 struct stat;
 struct rtcdate;
+struct pt_entry;
 
 // system calls
 int fork(void);
@@ -26,6 +27,7 @@ int uptime(void);
 
 // P5
 int mencrypt(char*, int);
+int getpgtable(struct pt_entry*, int);
 
 // ulib.c
 int stat(const char*, struct stat*);
