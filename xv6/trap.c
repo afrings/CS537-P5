@@ -81,10 +81,10 @@ trap(struct trapframe *tf)
   // P5
   case T_PGFLT:
     if(decrypt(rcr2()) == -1){
-      cprintf("here\n");
+      cprintf("PGFAULT PROBLEM trap.c line 84\n");
       panic("trap");
     } else{
-      
+      // cprintf("success: ");
     }
     // panic("trap");
     break;

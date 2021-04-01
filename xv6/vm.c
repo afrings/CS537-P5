@@ -448,6 +448,9 @@ int decrypt(uint address){
   pte_t *pte = walkpgdir(myproc()->pgdir, (void*)va_pg_aligned, 0);
   char* ka;
   char* pa;
+  if(uva2ka(myproc()->pgdir, va_pg_aligned) == 0){
+    return -1;
+  }
   cprintf("%x\n", *pte);
   if((*pte & PTE_E) == 0){
     return -1;

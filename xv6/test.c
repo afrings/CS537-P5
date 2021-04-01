@@ -14,7 +14,7 @@ int main(void) {
     ptr += 50;
     printf(1, "XV6_TEST_OUTPUT %d\n", mencrypt(ptr, PAGES_NUM));
 
-    if (*ptr != 0){
+    if (*ptr == 0){
         printf(1, "Weird\n");
     }
 
