@@ -68,7 +68,7 @@ mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm)
   for(;;){
     if((pte = walkpgdir(pgdir, a, 1)) == 0)
       return -1;
-    if(*pte & PTE_P)
+    if(*pte & PTE_P || (*pte & PTE_E)) // P5 added check here
       panic("remap");
     *pte = pa | perm | PTE_P;
     if(a == last)
@@ -266,7 +266,7 @@ deallocuvm(pde_t *pgdir, uint oldsz, uint newsz)
     pte = walkpgdir(pgdir, (char*)a, 0);
     if(!pte)
       a = PGADDR(PDX(a) + 1, 0, 0) - PGSIZE;
-    else if((*pte & PTE_P) != 0){
+    else if((*pte & PTE_P) != 0 || (*pte & PTE_E) != 0){ // P5 added check here
       pa = PTE_ADDR(*pte);
       if(pa == 0)
         panic("kfree");
@@ -325,7 +325,7 @@ copyuvm(pde_t *pgdir, uint sz)
   for(i = 0; i < sz; i += PGSIZE){
     if((pte = walkpgdir(pgdir, (void *) i, 0)) == 0)
       panic("copyuvm: pte should exist");
-    if(!(*pte & PTE_P))
+    if(!(*pte & PTE_P) && !(*pte & PTE_E)) // P5 added check here
       panic("copyuvm: page not present");
     pa = PTE_ADDR(*pte);
     flags = PTE_FLAGS(*pte);
@@ -352,7 +352,7 @@ uva2ka(pde_t *pgdir, char *uva)
   pte_t *pte;
 
   pte = walkpgdir(pgdir, uva, 0);
-  if((*pte & PTE_P) == 0 && (*pte & PTE_E) == 0)
+  if((*pte & PTE_P) == 0 && (*pte & PTE_E) == 0) // P5 added check here
     return 0;
   if((*pte & PTE_U) == 0)
     return 0;
@@ -415,7 +415,7 @@ int mencrypt(char* virtual_addr, int len){
 
   for (int l = 1; l < len + 1; ++l){
     pte = walkpgdir(myproc()->pgdir, (void*)(va_pg_aligned + ((l-1) * PGSIZE)), 0);
-    cprintf("%x\n", *pte);
+    // cprintf("%x\n", *pte);
     if((*pte & PTE_E) == 0){
       // set the PTE_E to 1 and set PTE_P to 0
       *pte = (*pte | PTE_E);
@@ -451,7 +451,7 @@ int decrypt(uint address){
   if(uva2ka(myproc()->pgdir, va_pg_aligned) == 0){
     return -1;
   }
-  cprintf("%x\n", *pte);
+  // cprintf("%x\n", *pte);
   if((*pte & PTE_E) == 0){
     return -1;
   }

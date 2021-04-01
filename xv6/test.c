@@ -17,6 +17,7 @@ int main(void) {
     if (*ptr == 0){
         printf(1, "Weird\n");
     }
+    // printf(1, "%x\n", *ptr);
 
     // struct pt_entry entries[PAGES_NUM];
     // printf(1, "%d\n", getpgtable(entries, PAGES_NUM));
