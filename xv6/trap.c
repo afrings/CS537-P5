@@ -78,6 +78,17 @@ trap(struct trapframe *tf)
     lapiceoi();
     break;
 
+  // P5
+  case T_PGFLT:
+    if(decrypt(rcr2()) == -1){
+      cprintf("here\n");
+      panic("trap");
+    } else{
+      
+    }
+    // panic("trap");
+    break;
+
   //PAGEBREAK: 13
   default:
     if(myproc() == 0 || (tf->cs&3) == 0){

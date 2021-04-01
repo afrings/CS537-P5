@@ -13,8 +13,12 @@ int main(void) {
     char* ptr = sbrk(PAGES_NUM * PGSIZE);
     ptr += 50;
     printf(1, "XV6_TEST_OUTPUT %d\n", mencrypt(ptr, PAGES_NUM));
-    printf(1, "XV6_TEST_OUTPUT %d\n", mencrypt(ptr, PAGES_NUM));
-    struct pt_entry entries[PAGES_NUM];
-    printf(1, "%d\n", getpgtable(entries, PAGES_NUM));
+
+    if (*ptr != 0){
+        printf(1, "Weird\n");
+    }
+
+    // struct pt_entry entries[PAGES_NUM];
+    // printf(1, "%d\n", getpgtable(entries, PAGES_NUM));
     exit();
 }

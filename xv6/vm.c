@@ -415,6 +415,7 @@ int mencrypt(char* virtual_addr, int len){
 
   for (int l = 1; l < len + 1; ++l){
     pte = walkpgdir(myproc()->pgdir, (void*)(va_pg_aligned + ((l-1) * PGSIZE)), 0);
+    cprintf("%x\n", *pte);
     if((*pte & PTE_E) == 0){
       // set the PTE_E to 1 and set PTE_P to 0
       *pte = (*pte | PTE_E);
@@ -438,6 +439,32 @@ int mencrypt(char* virtual_addr, int len){
 }
 
 int getpgtable(struct pt_entry* entries, int num){
+
+  return 0;
+}
+
+int decrypt(uint address){
+  char* va_pg_aligned = (char*)PGROUNDDOWN((uint)address);
+  pte_t *pte = walkpgdir(myproc()->pgdir, (void*)va_pg_aligned, 0);
+  char* ka;
+  char* pa;
+  cprintf("%x\n", *pte);
+  if((*pte & PTE_E) == 0){
+    return -1;
+  }
+
+  // set PTE_P to 1 and set PTE_E to 0
+  *pte = (*pte | PTE_P);
+  *pte = (*pte & 0xfffffdff);
+
+  pa = (char*)(*pte & 0xfffff000);
+  ka = P2V(pa);
+
+  for (int i = 0; i < 4096; i++){
+    *(ka + i) = (*(ka + i) ^ 0xFFFFFFFF);
+    // cprintf("%x ", *(ka + i));
+    // cprintf("%d\n", i);
+  }
 
   return 0;
 }
