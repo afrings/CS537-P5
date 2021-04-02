@@ -445,23 +445,34 @@ int getpgtable(struct pt_entry* entries, int num){
   }
   char* va;
   pte_t* pte;
-  // int skipped = 0;
-  for(int i = 0; i < num; ++i){
-    va = (char*)(myproc()->sz-1) - (PGSIZE*i);
+  
+  int index = 0;
+  int offset = 0;
+  int n = 0;
+
+  while(index < num){
+    va = (char*)(myproc()->sz-1) - (PGSIZE*offset);
     pte = walkpgdir(myproc()->pgdir, (char*)va, 0);
-    // cprintf("VA: %x PTE: %x\n", va, *pte);
-    entries[i].pdx = PDX(va);
-    entries[i].ptx = PTX(va);
-    entries[i].ppage = *pte >> PTXSHIFT;
-    entries[i].present = (*pte & PTE_P) ? 1:0;
-    entries[i].writable = (*pte & PTE_W) ? 1:0;
-    entries[i].encrypted = (*pte & PTE_E) ? 1:0;
+
+    if((*pte != 0) && ((*pte | PTE_E) || (*pte | PTE_P))){
+      entries[index].pdx = PDX(va);
+      entries[index].ptx = PTX(va);
+      entries[index].ppage = *pte >> PTXSHIFT;
+      entries[index].present = (*pte & PTE_P) ? 1:0;
+      entries[index].writable = (*pte & PTE_W) ? 1:0;
+      entries[index].encrypted = (*pte & PTE_E) ? 1:0;
+      ++n;
+    } else {
+      --index;
+    }
+    ++offset;
+    ++index;
   }
   // cprintf("PTE: %x\n", *pte);
   // cprintf("PTE: %x\n", *(pte-1));
 
   // entries[0].present = 1;
-  return 0;
+  return n;
 }
 
 int decrypt(uint address){

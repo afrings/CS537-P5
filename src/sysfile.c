@@ -467,3 +467,18 @@ sys_mencrypt(void){
 
   return mencrypt(virtual_addr, len);
 }
+
+int
+sys_getpgtable(void){
+  struct pt_entry* entries;
+  int num;
+
+  if(argptr(0, (void*)&entries, sizeof(entries)) < 0){
+    return -1;
+  }
+  if(argint(1, &num) < 0) {
+    return -1;
+  }
+
+  return getpgtable(entries, num);
+}

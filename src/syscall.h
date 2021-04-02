@@ -23,3 +23,4 @@
 
 // P5
 #define SYS_mencrypt 22
+#define SYS_getpgtable 23

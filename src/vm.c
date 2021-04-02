@@ -6,6 +6,7 @@
 #include "mmu.h"
 #include "proc.h"
 #include "elf.h"
+#include "ptentry.h"
 
 extern char data[];  // defined by kernel.ld
 pde_t *kpgdir;  // for use in scheduler()
@@ -68,7 +69,7 @@ mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm)
   for(;;){
     if((pte = walkpgdir(pgdir, a, 1)) == 0)
       return -1;
-    if(*pte & PTE_P)
+    if(*pte & PTE_P || (*pte & PTE_E)) // P5 added check here
       panic("remap");
     *pte = pa | perm | PTE_P;
     if(a == last)
@@ -266,7 +267,7 @@ deallocuvm(pde_t *pgdir, uint oldsz, uint newsz)
     pte = walkpgdir(pgdir, (char*)a, 0);
     if(!pte)
       a = PGADDR(PDX(a) + 1, 0, 0) - PGSIZE;
-    else if((*pte & PTE_P) != 0){
+    else if((*pte & PTE_P) != 0 || (*pte & PTE_E) != 0){ // P5 added check here
       pa = PTE_ADDR(*pte);
       if(pa == 0)
         panic("kfree");
@@ -325,7 +326,7 @@ copyuvm(pde_t *pgdir, uint sz)
   for(i = 0; i < sz; i += PGSIZE){
     if((pte = walkpgdir(pgdir, (void *) i, 0)) == 0)
       panic("copyuvm: pte should exist");
-    if(!(*pte & PTE_P))
+    if(!(*pte & PTE_P) && !(*pte & PTE_E)) // P5 added check here
       panic("copyuvm: page not present");
     pa = PTE_ADDR(*pte);
     flags = PTE_FLAGS(*pte);
@@ -352,7 +353,7 @@ uva2ka(pde_t *pgdir, char *uva)
   pte_t *pte;
 
   pte = walkpgdir(pgdir, uva, 0);
-  if((*pte & PTE_P) == 0 && (*pte & PTE_E) == 0)
+  if((*pte & PTE_P) == 0 && (*pte & PTE_E) == 0) // P5 added check here
     return 0;
   if((*pte & PTE_U) == 0)
     return 0;
@@ -408,25 +409,86 @@ int mencrypt(char* virtual_addr, int len){
   for (int l = 1; l < len + 1; ++l){
     ka = uva2ka(myproc()->pgdir, (va_pg_aligned + ((l-1) * PGSIZE)));
     if (ka == 0){
+      cprintf("Problem with invalid va\n");
       return -1;
     }
   }
 
   for (int l = 1; l < len + 1; ++l){
-    // encrypt the physical page
-    ka = uva2ka(myproc()->pgdir, (va_pg_aligned + ((l-1) * PGSIZE)));
-    if (ka == 0){
-      cprintf("PROBLEM HERE\n");
-    }
-    pa = ka - KERNBASE;
-    pa = (char*)(((uint)pa) ^ 0xFFFFFFFF);
-
-    // set the PTE_E to 1
     pte = walkpgdir(myproc()->pgdir, (void*)(va_pg_aligned + ((l-1) * PGSIZE)), 0);
-    cprintf("pt: %x\n", *pte);
-    *pte = (*pte | PTE_E);
-    cprintf("pt: %x\n", *pte);
-    cprintf("\n");
+    // cprintf("%x\n", *pte);
+    if((*pte & PTE_E) == 0){
+      // set the PTE_E to 1 and set PTE_P to 0
+      *pte = (*pte | PTE_E);
+      *pte = (*pte & 0xfffffffe);
+
+      pa = (char*)(*pte & 0xfffff000);
+      ka = P2V(pa);
+
+      // encrypt the physical page
+      for (int i = 0; i < 4096; i++){
+        *(ka + i) = (*(ka + i) ^ 0xFFFFFFFF);
+        // cprintf("%x ", *(ka + i));
+        // cprintf("%d\n", i);
+      }
+      // cprintf("\n");
+    }
+    switchuvm(myproc());
   }
+
+  return 0;
+}
+
+int getpgtable(struct pt_entry* entries, int num){
+  if(uva2ka(myproc()->pgdir, (char*)myproc()->sz-1) == 0){
+    return -1;
+  }
+  char* va;
+  pte_t* pte;
+  // int skipped = 0;
+  for(int i = 0; i < num; ++i){
+    va = (char*)(myproc()->sz-1) - (PGSIZE*i);
+    pte = walkpgdir(myproc()->pgdir, (char*)va, 0);
+    // cprintf("VA: %x PTE: %x\n", va, *pte);
+    entries[i].pdx = PDX(va);
+    entries[i].ptx = PTX(va);
+    entries[i].ppage = *pte >> PTXSHIFT;
+    entries[i].present = (*pte & PTE_P) ? 1:0;
+    entries[i].writable = (*pte & PTE_W) ? 1:0;
+    entries[i].encrypted = (*pte & PTE_E) ? 1:0;
+  }
+  // cprintf("PTE: %x\n", *pte);
+  // cprintf("PTE: %x\n", *(pte-1));
+
+  // entries[0].present = 1;
+  return 0;
+}
+
+int decrypt(uint address){
+  char* va_pg_aligned = (char*)PGROUNDDOWN((uint)address);
+  pte_t *pte = walkpgdir(myproc()->pgdir, (void*)va_pg_aligned, 0);
+  char* ka;
+  char* pa;
+  if(uva2ka(myproc()->pgdir, va_pg_aligned) == 0){
+    return -1;
+  }
+  // cprintf("%x\n", *pte);
+  if((*pte & PTE_E) == 0){
+    return -1;
+  }
+
+  // set PTE_P to 1 and set PTE_E to 0
+  *pte = (*pte | PTE_P);
+  *pte = (*pte & 0xfffffdff);
+
+  pa = (char*)(*pte & 0xfffff000);
+  ka = P2V(pa);
+
+  for (int i = 0; i < 4096; i++){
+    *(ka + i) = (*(ka + i) ^ 0xFFFFFFFF);
+    // cprintf("%x ", *(ka + i));
+    // cprintf("%d\n", i);
+  }
+
   return 0;
 }
