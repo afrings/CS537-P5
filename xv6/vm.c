@@ -6,6 +6,7 @@
 #include "mmu.h"
 #include "proc.h"
 #include "elf.h"
+#include "ptentry.h"
 
 extern char data[];  // defined by kernel.ld
 pde_t *kpgdir;  // for use in scheduler()
@@ -439,7 +440,27 @@ int mencrypt(char* virtual_addr, int len){
 }
 
 int getpgtable(struct pt_entry* entries, int num){
+  if(uva2ka(myproc()->pgdir, (char*)myproc()->sz-1) == 0){
+    return -1;
+  }
+  char* va;
+  pte_t* pte;
+  // int skipped = 0;
+  for(int i = 0; i < num; ++i){
+    va = (char*)(myproc()->sz-1) - (PGSIZE*i);
+    pte = walkpgdir(myproc()->pgdir, (char*)va, 0);
+    // cprintf("VA: %x PTE: %x\n", va, *pte);
+    entries[i].pdx = PDX(va);
+    entries[i].ptx = PTX(va);
+    entries[i].ppage = *pte >> PTXSHIFT;
+    entries[i].present = (*pte & PTE_P) ? 1:0;
+    entries[i].writable = (*pte & PTE_W) ? 1:0;
+    entries[i].encrypted = (*pte & PTE_E) ? 1:0;
+  }
+  // cprintf("PTE: %x\n", *pte);
+  // cprintf("PTE: %x\n", *(pte-1));
 
+  // entries[0].present = 1;
   return 0;
 }
 
