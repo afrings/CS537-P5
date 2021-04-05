@@ -450,19 +450,21 @@ int
 sys_mencrypt(void){
   char* virtual_addr;
   int len;
-  if(argptr(0, &virtual_addr, sizeof(virtual_addr)) < 0){
-    return -1;
-  }
+  
   if(argint(1, &len) < 0) {
     return -1;
+  }
+
+  if(len == 0){
+    return 0;
   }
 
   if(len < 0){
     return - 1;
   }
 
-  if(len == 0){
-    return 0;
+  if(argptr(0, &virtual_addr, 32* sizeof(virtual_addr)) < 0){
+    return -1;
   }
 
   return mencrypt(virtual_addr, len);
@@ -481,4 +483,18 @@ sys_getpgtable(void){
   }
 
   return getpgtable(entries, num);
+}
+
+int sys_dump_rawphymem(void){
+
+  int physical_addr;
+  char* buffer;
+  if(argint(0, &physical_addr) < 0) {
+    return -1;
+  }
+  if(argptr(1, (void*)&buffer, sizeof(buffer)) < 0){
+    return -1;
+  }
+
+  return dump_rawphymem((uint)physical_addr, buffer);
 }

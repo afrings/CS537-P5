@@ -32,3 +32,4 @@ SYSCALL(uptime)
 
 SYSCALL(mencrypt)
 SYSCALL(getpgtable)
+SYSCALL(dump_rawphymem)

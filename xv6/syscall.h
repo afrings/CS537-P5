@@ -24,3 +24,4 @@
 // P5
 #define SYS_mencrypt 22
 #define SYS_getpgtable 23
+#define SYS_dump_rawphymem 24

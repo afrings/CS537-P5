@@ -6,34 +6,32 @@
 #define PGSIZE 4096
 
 
-int main(void) {
-    const uint PAGES_NUM = 20;
-    struct pt_entry entries[PAGES_NUM];
+
+int 
+main(void){
+    const uint PAGES_NUM = 5;
     
     // Allocate one pages of space
-    char* ptr = sbrk(PAGES_NUM * PGSIZE);
-    ptr += 50;
+    char *ptr = sbrk(PGSIZE * sizeof(char));
+    while ((uint)ptr != 0x6000)
+        ptr = sbrk(PGSIZE * sizeof(char));
 
-    printf(1, "getpgtable output: %d\n", getpgtable(entries, PAGES_NUM));
+    ptr = sbrk(PAGES_NUM * PGSIZE);
+    int ppid = getpid();
 
-    for(int i = 0; i < PAGES_NUM; ++i){
-        printf(1, "pdx: 0x%x ptx: 0x%x ppage: 0x%x present: %d writable: %d encrypted: %d\n", 
-        entries[i].pdx, entries[i].ptx, entries[i].ppage, entries[i].present, entries[i].writable, entries[i].encrypted);
+    if (fork() == 0) {
+        // Should page fault as normally here
+        ptr[PAGES_NUM * PGSIZE] = 0xAA;
+
+        printf(1, "XV6_TEST_OUTPUT Seg fault failed to trigger\n");
+        // Shouldn't reach here
+        kill(ppid);
+        exit();
+    } else {
+        wait();
     }
 
-    printf(1, "XV6_TEST_OUTPUT %d\n", mencrypt(ptr, PAGES_NUM));
-
-    if (*(ptr + 5) == 0){
-        // printf(1, "Weird\n");
-    }
-    // printf(1, "%x\n", *ptr);
-
-    printf(1, "getpgtable output: %d\n", getpgtable(entries, PAGES_NUM));
-
-    for(int i = 0; i < PAGES_NUM; ++i){
-        printf(1, "pdx: 0x%x ptx: 0x%x ppage: 0x%x present: %d writable: %d encrypted: %d\n", 
-        entries[i].pdx, entries[i].ptx, entries[i].ppage, entries[i].present, entries[i].writable, entries[i].encrypted);
-    }
+    printf(1, "XV6_TEST_OUTPUT TEST PASS\n");
 
     exit();
 }

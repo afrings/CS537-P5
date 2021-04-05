@@ -72,6 +72,9 @@ mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm)
     if(*pte & PTE_P || (*pte & PTE_E)) // P5 added check here
       panic("remap");
     *pte = pa | perm | PTE_P;
+    if(*pte & PTE_E){
+      *pte = (*pte & 0xfffffffe);
+    }
     if(a == last)
       break;
     a += PGSIZE;
@@ -396,6 +399,9 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
 // P5
 
 int mencrypt(char* virtual_addr, int len){
+  if (len == 0){
+    return 0;
+  }
   if (len < 0){
     return -1;
   }
@@ -457,7 +463,7 @@ int getpgtable(struct pt_entry* entries, int num){
     if((*pte != 0) && ((*pte | PTE_E) || (*pte | PTE_P))){
       entries[index].pdx = PDX(va);
       entries[index].ptx = PTX(va);
-      entries[index].ppage = *pte >> PTXSHIFT;
+      entries[index].ppage = PTE_ADDR(*pte) >> 12 ;
       entries[index].present = (*pte & PTE_P) ? 1:0;
       entries[index].writable = (*pte & PTE_W) ? 1:0;
       entries[index].encrypted = (*pte & PTE_E) ? 1:0;
@@ -475,16 +481,25 @@ int getpgtable(struct pt_entry* entries, int num){
   return n;
 }
 
+int dump_rawphymem(uint physical_addr, char* buffer){
+  char* va = P2V(physical_addr);
+  copyout(myproc()->pgdir, (uint)buffer, va, PGSIZE);
+  return 0;
+}
+
 int decrypt(uint address){
   char* va_pg_aligned = (char*)PGROUNDDOWN((uint)address);
   pte_t *pte = walkpgdir(myproc()->pgdir, (void*)va_pg_aligned, 0);
   char* ka;
   char* pa;
   if(uva2ka(myproc()->pgdir, va_pg_aligned) == 0){
+    // cprintf("here\n");
     return -1;
   }
   // cprintf("%x\n", *pte);
+  
   if((*pte & PTE_E) == 0){
+    // cprintf("here\n");
     return -1;
   }
 
